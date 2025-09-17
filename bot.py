@@ -19,32 +19,39 @@ class DiscordBot(commands.Bot):
             help_command=None
         )
     
+    async def update_guild_commands(self, guild=None):
+      """Sincroniza os comandos com um servidor específico ou globalmente"""
+      try:
+        if guild:
+          self.tree.copy_global_to(guild=guild)
+          await self.tree.sync(guild=guild)
+          logger.info(f"Comandos sincronizados para o servidor {guild.name} (ID: {guild.id})")
+        else:
+          await self.tree.sync()
+          logger.info("Comandos globais sincronizados com sucesso")
+      except Exception as e:
+        if guild:
+          logger.error(f"Erro ao sincronizar comandos no servidor {guild.name}: {e}")
+        else:
+          logger.error(f"Erro ao sincronizar comandos globais: {e}")
+
     async def setup_hook(self):
-        try:
-            await self.load_extension('cogs.basic_commands')
-            logger.info("Cogs carregados com sucesso")
-            
-            if self.guilds:
-                for guild in self.guilds:
-                    try:
-                        self.tree.copy_global_to(guild=guild)
-                        await self.tree.sync(guild=guild)
-                        logger.info(f"Comandos sincronizados para o servidor {guild.name} (ID: {guild.id})")
-                    except Exception as e:
-                        logger.error(f"Erro ao sincronizar comandos no servidor {guild.name}: {e}")
-            else:
-                await self.tree.sync()
-                logger.info("Comandos sincronizados globalmente (nenhum servidor encontrado)")
-                
-        except Exception as e:
-            logger.error(f"Erro ao carregar cogs: {e}")
+      try:
+        await self.load_extension('cogs.basic_commands')
+        await self.load_extension('cogs.voice_commands')
+        logger.info("Cogs carregados com sucesso")
+          
+      except Exception as e:
+        logger.error(f"Erro ao carregar cogs: {e}")
     
     async def on_ready(self):
-        logger.info(f'{self.user} está online!')
-        logger.info(f'Conectado a {len(self.guilds)} servidor(es)')
-        
-        for guild in self.guilds:
-            logger.info(f"Servidor: {guild.name} (ID: {guild.id}) - {guild.member_count} membros")
+      logger.info(f'{self.user} está online!')
+      logger.info(f'Conectado a {len(self.guilds)} servidor(es)')
+      
+      for guild in self.guilds:
+        logger.info(f"Servidor: {guild.name} (ID: {guild.id}) - {guild.member_count} membros")
+        await self.update_guild_commands(guild)
+
         
         activity = discord.Activity(
             type=discord.ActivityType.watching, 
